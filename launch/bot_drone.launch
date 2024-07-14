@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Arguments for vehicle model and world -->
+    <arg name="x" default="0"/>
+    <arg name="y" default="0"/>
+    <arg name="z" default="0"/>
+    <arg name="R" default="0"/>
+    <arg name="P" default="0"/>
+    <arg name="Y" default="0"/>
+    <arg name="vehicle" default="iris_downward_depth_camera"/>
+    <arg name="vehicle2" default="iris"/>
+    <arg name="world" default="$(find mavlink_sitl_gazebo)/worlds/empty.world"/>
+    <arg name="sdf" default="$(find mavlink_sitl_gazebo)/models/$(arg vehicle)/$(arg vehicle).sdf"/>
+    <arg name="gui" default="true"/>
+    <arg name="debug" default="false"/>
+    <arg name="verbose" default="false"/>
+    <arg name="paused" default="false"/>
+    <arg name="respawn_gazebo" default="false"/>
+    <arg name="model" default="$(env TURTLEBOT3_MODEL)" doc="model type [burger, waffle, waffle_pi]"/>
+    <arg name="x_pos" default="0.5"/>
+    <arg name="y_pos" default="0.0"/>
+    <arg name="z_pos" default="0.0"/>
+
+    <!-- Set PX4 simulator environment variable -->
+    <!--env name="PX4_SIM_MODEL" value="gazebo-classic_$(arg vehicle)" /-->
+
+    <!-- Launch Gazebo with empty world -->
+    <node name="gazebo" pkg="gazebo_ros" type="gazebo" args="$(arg world)" output="screen">
+        <param name="use_sim_time" value="true"/>
+        <param name="paused" value="$(arg paused)"/>
+        <param name="gui" value="$(arg gui)"/>
+        <param name="headless" value="false"/>
+        <param name="debug" value="$(arg debug)"/>
+    </node>
+
+    <!-- PX4 SITL -->
+    <node name="sitl" pkg="px4" type="px4" output="screen"
+          args="$(find px4)/build/px4_sitl_default/etc -s etc/init.d-posix/rcS" required="true"/>
+
+    <!-- Spawn the drone model -->
+    <node name="spawn_drone" pkg="gazebo_ros" type="spawn_model" output="screen"
+          args="-sdf -file $(arg sdf) -model $(arg vehicle) -x $(arg x) -y $(arg y) -z $(arg z) -R $(arg R) -P $(arg P) -Y $(arg Y)"/>
+
+    <!-- Spawn the TurtleBot -->
+    <param name="robot_description" command="$(find xacro)/xacro --inorder $(find turtlebot3_description)/urdf/turtlebot3_$(arg model).urdf.xacro" />
+    <node pkg="gazebo_ros" type="spawn_model" name="spawn_turtlebot" output="screen"
+          args="-urdf -model turtlebot3_$(arg model) -x $(arg x_pos) -y $(arg y_pos) -z $(arg z_pos) -param robot_description" />
+</launch>
